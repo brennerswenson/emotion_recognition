@@ -6,7 +6,8 @@ import seaborn as sns
 import pandas as pd
 from matplotlib import pyplot as plt
 from sklearn import metrics
-from sklearn.model_selection import train_test_split
+
+import random
 
 from SVC import EmotionRecSVC
 from config import LABELS
@@ -16,25 +17,29 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
-    X, y = load_data("../../CW_Dataset", "train")
+    X_train, y_train = load_data("../../CW_Dataset", "train", mode='sklearn')
+    X_val, y_val = load_data("../../CW_Dataset", "val", mode='sklearn')
 
     kernels = ["rbf", "poly"]
-    C_options = [0.1, 0.5, 0.8, 1, 1.2, 1.5, 2, 5, 10]
-    cluster_factors = [10, 20, 30]
-    batch_div_opts = [2, 4, 6, 8]
+    C_options = [0.1, 1, 2, 5, 10, 20, 50]
+    cluster_factors = [30, 40, 50, 60]
+    batch_div_opts = [8, 10, 12]
 
     total_combos = len(kernels) * len(C_options) * len(cluster_factors) * len(batch_div_opts)
     search_results = list()
 
     counter = 0
 
+    random.shuffle(kernels)
+    random.shuffle(C_options)
+    random.shuffle(cluster_factors)
+    random.shuffle(batch_div_opts)
+
     for kernel in kernels:
         for c in C_options:
             for cluster_fact in cluster_factors:
                 for b_div in batch_div_opts:
                     logger.info(f"{counter + 1} out of {total_combos}")
-
-                    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, shuffle=True, stratify=y)
 
                     results = dict()
 

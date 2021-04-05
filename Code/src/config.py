@@ -1,11 +1,11 @@
 from collections import OrderedDict
 LABELS = OrderedDict({
     -1: "No prediction",
-    1: "Surprise",
-    2: "Fear",
-    3: "Disgust",
-    4: "Happiness",
-    5: "Sadness",
-    6: "Anger",
-    7: "Neutral",
+    0: "Surprise",
+    1: "Fear",
+    2: "Disgust",
+    3: "Happiness",
+    4: "Sadness",
+    5: "Anger",
+    6: "Neutral",
 })
