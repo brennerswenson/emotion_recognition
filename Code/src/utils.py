@@ -1,19 +1,16 @@
-import os
 import logging
+import os
 import random
 
 import cv2
 import numpy as np
-from skimage import img_as_ubyte, color, feature
-from sklearn.cluster import MiniBatchKMeans
-from tqdm import tqdm
-from matplotlib import pyplot as plt
-from torch.utils import data
-from torchvision import datasets
-from torchvision import transforms
-
 from config import LABELS
-
+from matplotlib import pyplot as plt
+from skimage import color, feature, img_as_ubyte
+from sklearn.cluster import MiniBatchKMeans
+from torch.utils import data
+from torchvision import datasets, transforms
+from tqdm import tqdm
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -28,8 +25,12 @@ def load_data(path, subset, mode="sklearn"):
         # the training transforms contain data augmentation
         "train": transforms.Compose(
             [
-                transforms.ColorJitter(0.15, 0.15, 0.15, 0.15),
+                transforms.RandomPerspective(distortion_scale=0.15),
+                transforms.ColorJitter(0.25, 0.15, 0.05, 0.05),
+                transforms.GaussianBlur(7, (0.01, 0.5)),
+                transforms.RandomGrayscale(p=0.5),
                 transforms.RandomHorizontalFlip(),
+                transforms.RandomResizedCrop(100, (0.85, 1)),
                 transforms.ToTensor(),
             ]
         ),
@@ -134,6 +135,18 @@ class HOG:
 
     def fit_transform(self, X):
         return self.fit(X).transform(X)
+
+    def __call__(self, X):
+        img = img_as_ubyte(color.rgb2gray(X))
+        HOG_des = feature.hog(
+            img,
+            orientations=self.orientations,
+            pixels_per_cell=self.pix_per_cell,
+            cells_per_block=self.cells_per_block,
+            feature_vector=True,
+            multichannel=False
+        )
+        return HOG_des
 
 
 def plot_sample_predictions(X_test, y_pred, y_true, n_show):

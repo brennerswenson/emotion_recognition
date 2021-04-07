@@ -1,4 +1,5 @@
 from collections import OrderedDict
+
 LABELS = OrderedDict({
     -1: "No prediction",
     0: "Surprise",

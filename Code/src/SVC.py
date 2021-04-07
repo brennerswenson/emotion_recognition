@@ -2,7 +2,6 @@ import logging
 
 import numpy as np
 from sklearn import svm
-
 from utils import SIFT, MiniKMeans
 
 logging.basicConfig(level=logging.INFO)

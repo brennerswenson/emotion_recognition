@@ -1,16 +1,14 @@
 import logging
+import random
 import time
 
 import numpy as np
-import seaborn as sns
 import pandas as pd
+import seaborn as sns
+from config import LABELS
 from matplotlib import pyplot as plt
 from sklearn import metrics
-
-import random
-
 from SVC import EmotionRecSVC
-from config import LABELS
 from utils import load_data, plot_sample_predictions
 
 logging.basicConfig(level=logging.INFO)
