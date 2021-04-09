@@ -10,3 +10,11 @@ LABELS = OrderedDict({
     5: "Anger",
     6: "Neutral",
 })
+PLOT_RC = {
+    "axes.facecolor": "white",
+    "axes.edgecolor": "black",
+    "font.family": ["serif"],
+    "grid.color": "gainsboro",
+    "grid.linestyle": "-",
+    "patch.edgecolor": "none",
+}
