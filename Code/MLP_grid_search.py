@@ -120,7 +120,7 @@ if __name__ == "__main__":
                         for epoch in range(epochs):
                             val_iter = itertools.cycle(val_dl)
 
-                            running_loss = 0.0
+                            running_epoch_loss = 0.0
                             epoch_val_accuracy_arr = list()
                             for batch_idx, data_batch in tqdm(enumerate(train_dl, 0), total=len(train_dl), ):
                                 # get the inputs; data is a list of [inputs, labels]
@@ -134,7 +134,7 @@ if __name__ == "__main__":
                                 loss.backward()
                                 optimizer.step()
 
-                                running_loss += loss.item() * inputs.size(0)
+                                running_epoch_loss += loss.item() * inputs.size(0)
 
                                 # Validation batch accuracy
                                 with torch.no_grad():  # Avoid backprop at test
@@ -150,10 +150,10 @@ if __name__ == "__main__":
                                 if batch_idx % 1 == 0:
                                     logger.info(
                                         f"Epoch: {epoch + 1}/{epochs} Batch: {batch_idx + 1}/{len(train_dl)} "
-                                        f"Loss: {running_loss / ((batch_idx + 1) * batch_size): .5f} "
+                                        f"Loss: {running_epoch_loss / ((batch_idx + 1) * batch_size): .5f} "
                                         f"Validation Accuracy: {val_batch_accuracy: .2f}%"
                                     )
-                            epoch_loss = running_loss / (len(train_dl) * batch_size)
+                            epoch_loss = running_epoch_loss / (len(train_dl) * batch_size)
                             epoch_accuracy = np.mean(epoch_val_accuracy_arr)
                             val_accuracy.append(epoch_accuracy)
                             losses.append(epoch_loss)
@@ -260,7 +260,7 @@ if __name__ == "__main__":
 
                         df = pd.DataFrame.from_records(grid_results)
                         df.to_csv(
-                            f"../../Outputs/MLP_grid_{time.strftime('%Y-%m-%d %H-%S')}.csv",
+                            f"../Outputs/MLP_grid_{time.strftime('%Y-%m-%d %H-%S')}.csv",
                             index=False,
                         )
                         X_val, y_val = load_data(

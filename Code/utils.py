@@ -46,8 +46,8 @@ def load_data(
                 transforms.RandomHorizontalFlip(),
                 transforms.RandomResizedCrop(100, (0.85, 1)),
                 HOG(
-                    orientations=hog_dict["orientation"],
-                    pix_per_cell=hog_dict["pix_per_cell"],
+                    orientations=hog_dict.get("orientation"),
+                    pix_per_cell=hog_dict.get("pix_per_cell"),
                     cells_per_block=(1, 1),
                     multichannel=True,
                 ),
@@ -56,14 +56,39 @@ def load_data(
         "val_hog": transforms.Compose(
             [
                 HOG(
-                    orientations=hog_dict["orientation"],
-                    pix_per_cell=hog_dict["pix_per_cell"],
+                    orientations=hog_dict.get("orientation"),
+                    pix_per_cell=hog_dict.get("pix_per_cell"),
                     cells_per_block=(1, 1),
                     multichannel=True,
                 )
             ]
         ),
+        "train_normal": transforms.Compose(
+            [
+                transforms.RandomPerspective(distortion_scale=0.10),
+                transforms.ColorJitter(0.50, 0.50, 0.05, 0.05),
+                transforms.GaussianBlur(7, (0.01, 1)),
+                transforms.RandomGrayscale(p=0.5),
+                transforms.RandomRotation(degrees=30),
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomResizedCrop(100, (0.85, 1)),
+                transforms.ToTensor(),
+            ]
+        ),
         "val_normal": transforms.Compose([transforms.ToTensor()]),
+        "train_cnn": transforms.Compose(
+            [
+                transforms.RandomPerspective(distortion_scale=0.10),
+                transforms.ColorJitter(0.50, 0.50, 0.05, 0.05),
+                transforms.GaussianBlur(7, (0.01, 1)),
+                transforms.RandomGrayscale(p=0.5),
+                transforms.RandomRotation(degrees=30),
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomResizedCrop(100, (0.85, 1)),
+                transforms.ToTensor(),
+            ]
+        ),
+        "val_cnn": transforms.Compose([transforms.ToTensor()]),
     }
 
     dataset = datasets.ImageFolder(path + "/" + subset, transform=transform_dict[key])
@@ -71,7 +96,6 @@ def load_data(
     if method == "normal":
         images = list()
         labels = list()
-
         for img, label in dataset:
             img = img.permute(1, 2, 0).numpy()
             label = int(label)
@@ -118,8 +142,7 @@ class SIFT:
         des_arr = list()
         logger.info(f"Beginning SIFT transformations for {len(X)} images")
         for i in tqdm(range(len(X))):
-            img = img_as_ubyte(color.rgb2gray(X[i]))
-            kp, des = self.sift.detectAndCompute(img, None)
+            kp, des = self.sift.detectAndCompute(img_as_ubyte(X[i]), None)
             des_arr.append(des)
         return des_arr
 

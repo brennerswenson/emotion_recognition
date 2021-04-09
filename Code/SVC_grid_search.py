@@ -15,8 +15,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
-    X_train, y_train = load_data("../CW_Dataset", "train", mode='sklearn')
-    X_val, y_val = load_data("../CW_Dataset", "val", mode='sklearn')
+    X_train, y_train = load_data("../CW_Dataset", "train", hog_dict={}, batch_size=None, method='normal')
+    X_val, y_val = load_data("../CW_Dataset", "val", hog_dict={}, batch_size=None, method='normal')
 
     kernels = ["rbf", "poly"]
     C_options = [0.1, 1, 2, 5, 10, 20, 50]
@@ -91,7 +91,7 @@ if __name__ == "__main__":
                     if counter % 5 == 0:
                         df = pd.DataFrame.from_records(search_results)
                         df.to_csv(
-                            f"../../Outputs/SVC_grid_{time.strftime('%Y-%m-%d %H-%S')}.csv",
+                            f"../Outputs/SVC_grid_{time.strftime('%Y-%m-%d %H-%S')}.csv",
                             index=False,
                         )
 
