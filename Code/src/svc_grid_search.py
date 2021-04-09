@@ -95,5 +95,5 @@ if __name__ == "__main__":
                             index=False,
                         )
 
-                    plot_sample_predictions(X_val, predicted, y_val, 10)
+                    plot_sample_predictions(X_val, predicted, y_val, 4, 5, 'SIFT-SVM')
                     plt.show()
