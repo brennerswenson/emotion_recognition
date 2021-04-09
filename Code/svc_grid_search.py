@@ -15,8 +15,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
-    X_train, y_train = load_data("../../CW_Dataset", "train", mode='sklearn')
-    X_val, y_val = load_data("../../CW_Dataset", "val", mode='sklearn')
+    X_train, y_train = load_data("../CW_Dataset", "train", mode='sklearn')
+    X_val, y_val = load_data("../CW_Dataset", "val", mode='sklearn')
 
     kernels = ["rbf", "poly"]
     C_options = [0.1, 1, 2, 5, 10, 20, 50]

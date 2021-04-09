@@ -73,7 +73,7 @@ if __name__ == "__main__":
 
                         hog_dict = {"orientation": orient, "pix_per_cell": pix_per_cell}
                         train_dl = load_data(
-                            "../../CW_Dataset",
+                            "../CW_Dataset",
                             "train",
                             "hog",
                             hog_dict,
@@ -83,7 +83,7 @@ if __name__ == "__main__":
                             weighted_sampling=True,
                         )
                         num_samples = len(train_dl.dataset.imgs)
-                        val_dl = load_data("../../CW_Dataset", "val", "hog", hog_dict, batch_size)
+                        val_dl = load_data("../CW_Dataset", "val", "hog", hog_dict, batch_size)
 
                         t0 = time.time()
 
@@ -108,6 +108,7 @@ if __name__ == "__main__":
                             len(val_dl.dataset.classes),
                         )
                         net = net.float()
+                        net = torch.nn.DataParallel(net, device_ids=[0])
                         net.to(device)
 
                         criterion = nn.CrossEntropyLoss()
@@ -178,7 +179,7 @@ if __name__ == "__main__":
                         max_acc_epoch = np.array(val_accuracy).argmax() + 1
                         logger.info(f"Max accuracy achieved: {max_accuracy: .2f}% at epoch {max_acc_epoch}")
 
-                        model_path = "..\\..\\Models"
+                        model_path = "../Models"
                         model_name = f"hog_mlp_{time.strftime('%Y-%m-%d %H-%S')}.pth"
 
                         model_file_name = model_path + "/" + model_name
@@ -187,7 +188,7 @@ if __name__ == "__main__":
                         # VALIDATION ON ALL VAL DATA AT ONCE
                         ### Reset the validation datsets for overall metrics
                         val_dl = load_data(
-                            "../../CW_Dataset", "val", "hog", hog_dict, batch_size, shuffle=False
+                            "../CW_Dataset", "val", "hog", hog_dict, batch_size, shuffle=False
                         )
 
                         correct = 0
@@ -263,7 +264,7 @@ if __name__ == "__main__":
                             index=False,
                         )
                         X_val, y_val = load_data(
-                            "../../CW_Dataset", "val", "normal", hog_dict, batch_size, shuffle=False
+                            "../CW_Dataset", "val", "normal", hog_dict, batch_size, shuffle=False
                         )
                         plot_sample_predictions(X_val, all_preds.cpu(), y_val, 4, 5, 'HOG-MLP')
 
