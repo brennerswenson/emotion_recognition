@@ -128,7 +128,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-CW_Dataset/
-Video/
+cw_dataset/
+video/
 .idea/
-Outputs/
+outputs/

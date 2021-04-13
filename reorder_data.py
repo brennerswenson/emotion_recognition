@@ -10,7 +10,7 @@ from sklearn.model_selection import train_test_split
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-path = "CW_Dataset"
+path = "cw_dataset"
 subsets = ["train", "test"]
 
 
