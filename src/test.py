@@ -27,7 +27,7 @@ MODELS_DIR = str(PROJECT_DIR.joinpath("models"))
 VIDEOS_DIR = str(PROJECT_DIR.joinpath("video"))
 
 SVM_MODEL = "SIFT-SVC_2021-04-12 22-08.joblib"
-CNN_MODEL = "CNN_2021-04-12 19-43.pth"
+CNN_MODEL = "CNN_2021-04-14 14-38.pth"
 MLP_MODEL = "MLP_2021-04-12 19-52.pth"
 
 MLP_INPUT = 10000  # length of hog feature descriptors
@@ -212,23 +212,37 @@ class EmotionRecognitionVideo(EmotionRecognition):
         return frames
 
     def get_faces(self, frames):
-        self.min_size = self.height // 15
+        self.min_size = self.height // 14
+        profile_face_tolerance = 0.75
+        profe_face_high = 1 + profile_face_tolerance
+        profe_face_low = 1 - profile_face_tolerance
+
         logger.info(f"Finding faces with min size {self.min_size} x {self.min_size}")
         face_dict = OrderedDict()
         for idx, frame in tqdm(enumerate(frames), total=len(frames)):
             face_boxes = self.face_cascade.detectMultiScale(
-                frame, 1.04, 60, minSize=(self.min_size, self.min_size)
+                frame, 1.03, 35, minSize=(self.min_size, self.min_size)
             )
             profile_boxes = self.profile_cascade.detectMultiScale(
-                frame, 1.04, 75, minSize=(self.min_size, self.min_size)
+                frame, 1.03, 35, minSize=(self.min_size, self.min_size)
             )
-            profile_boxes = np.array([x for x in profile_boxes if x not in face_boxes])
             logger.info(f"{len(face_boxes)} faces")
             logger.info(f"{len(profile_boxes)} profiles")
 
-            if isinstance(face_boxes, np.ndarray) and profile_boxes.any():
-                face_boxes = np.concatenate((face_boxes, profile_boxes), axis=0)
-            elif profile_boxes.any() and isinstance(face_boxes, tuple):
+            if isinstance(face_boxes, np.ndarray) and isinstance(profile_boxes, np.ndarray):
+                similarity_scores = [(x, y, x / y) for y in profile_boxes for x in face_boxes]
+                profile_boxes = np.array([
+                    x[1]
+                    for x in similarity_scores
+                    if not (
+                        (profe_face_low <= x[2][0] <= profe_face_high)
+                        or (profe_face_low <= x[2][1] <= profe_face_high)
+                    )
+                ])
+                if profile_boxes.any():
+                    logger.info(f"Adding {len(profile_boxes)} profile not present in faces")
+                    face_boxes = np.concatenate((face_boxes, profile_boxes), axis=0)
+            if isinstance(profile_boxes, np.ndarray) and isinstance(face_boxes, tuple):
                 face_boxes = profile_boxes
 
             logger.info(f"{len(face_boxes)} objects")
@@ -301,7 +315,7 @@ if __name__ == "__main__":
     # logger.info(f"{str(metrics)}")
 
     erv = EmotionRecognitionVideo(model_type="CNN")
-    frames = erv.predict_video(VIDEOS_DIR + "\pexels-any-lane-5720274.mp4")
+    frames = erv.predict_video(VIDEOS_DIR + "\pexels-rodnae-productions-5617899.mp4")
     # frames = erv.predict_video(VIDEOS_DIR + '\pexels-diva-plavalaguna-6194825.mp4')
     # frames = erv.predict_video(VIDEOS_DIR + '\pexels-diva-plavalaguna-6194803.mp4')
     # frames = erv.predict_video(VIDEOS_DIR + "\WIN_20210413_20_36_01_Pro.mp4")

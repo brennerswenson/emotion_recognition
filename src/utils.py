@@ -55,7 +55,7 @@ def load_data(
         transforms.GaussianBlur(3, (0.001, 1)),
         transforms.RandomGrayscale(p=0.5),
         transforms.RandomHorizontalFlip(),
-        transforms.RandomAffine(30, scale=(0.7, 1.3)),
+        transforms.RandomAffine(15, scale=(0.7, 1.3)),
         transforms.ToTensor(),
         transforms.RandomErasing(p=0.50),
         transforms.ToPILImage(),
