@@ -2,7 +2,7 @@ import subprocess
 import random
 
 if __name__ == "__main__":
-    batch_size_opts = [128, 64, 32]
+    batch_size_opts = [64, 32]
     epoch_opts = [50, 100]
     wd_opts = [1e-4, 1e-3]
     orient_opts = [16, 8]
@@ -22,7 +22,7 @@ if __name__ == "__main__":
                             for lr in lr_opts:
                                 tmp_combo = {
                                     "wd": wd,
-                                    "epoch": e,
+                                    "e": e,
                                     "batch": batch,
                                     "lr": lr,
                                     "dropout": dropout,

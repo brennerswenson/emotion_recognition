@@ -3,7 +3,7 @@ import random
 
 if __name__ == "__main__":
     batch_size_opts = [64, 32]
-    epoch_opts = [75, 100, 150]
+    epoch_opts = [100, 150]
     wd_opts = [1e-4, 1e-3, 2e-3]
     lr_opts = [1e-3, 2e-3]
     dropout_rates = [0.5, 0.25, 0.125]

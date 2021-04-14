@@ -51,14 +51,13 @@ def load_data(
     key = subset + "_" + method
 
     augmentation_transforms = [
-        transforms.RandomPerspective(distortion_scale=0.25),
-        transforms.ColorJitter(0.50, 0.50, 0.05, 0.05),
-        transforms.GaussianBlur(7, (0.001, 2)),
+        transforms.ColorJitter(0.50, 0.50, 0.15, 0.15),
+        transforms.GaussianBlur(3, (0.001, 1)),
         transforms.RandomGrayscale(p=0.5),
         transforms.RandomHorizontalFlip(),
-        transforms.RandomRotation(15, interpolation=transforms.functional.InterpolationMode('nearest')),
+        transforms.RandomAffine(30, scale=(0.7, 1.3)),
         transforms.ToTensor(),
-        transforms.RandomErasing(p=0.25),
+        transforms.RandomErasing(p=0.50),
         transforms.ToPILImage(),
     ]
 

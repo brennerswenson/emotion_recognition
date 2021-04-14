@@ -36,7 +36,7 @@ class EmotionRecCNN(BaseModel):
             nn.BatchNorm2d(256),
             nn.Dropout(self.dropout_rate),
             nn.Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
-            nn.ReLU(),  # output :256*25*25
+            nn.ReLU(),  # output :256x 25 x 25
             nn.BatchNorm2d(256),
             nn.MaxPool2d(5, 5),  # output: 256 x 5 x 5
             nn.Dropout(self.dropout_rate),
