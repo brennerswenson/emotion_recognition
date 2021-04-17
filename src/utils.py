@@ -129,8 +129,8 @@ def load_data(
         return images, labels
     else:
         num_workers = len(dataset.imgs) // batch_size // 2
-        num_workers = num_workers if num_workers <= 5 else 5
-        num_workers = num_workers if subset != 'test' else 0
+        num_workers = num_workers if num_workers <= 6 else 6
+        # num_workers = num_workers if subset != 'test' else 0
         if num_workers > 0:
             logger.info(
                 f"{subset} DataLoader using {num_workers} workers for {len(dataset.imgs)} images"
@@ -260,7 +260,6 @@ class HOG:
 def plot_sample_predictions(
     X_test, y_pred, y_true, num_rows, num_cols, model_type, tensor=False, writer=None, figsize=(16,9), accuracy=None
 ):
-
     random_idx = random.sample(range(0, len(X_test)), num_rows * num_cols)
 
     X_test = np.array(X_test)[random_idx]

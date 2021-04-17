@@ -132,3 +132,7 @@ cw_dataset/
 video/
 .idea/
 outputs/
+.DS_Store
+logs/
+old_logs/
+models/

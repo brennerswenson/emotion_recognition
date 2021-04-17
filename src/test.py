@@ -27,7 +27,7 @@ MODELS_DIR = str(PROJECT_DIR.joinpath("models"))
 VIDEOS_DIR = str(PROJECT_DIR.joinpath("video"))
 
 SVM_MODEL = "SIFT-SVC_2021-04-12 22-08.joblib"
-CNN_MODEL = "CNN_2021-04-14 14-38.pth"
+CNN_MODEL = "CNN_2021-04-14 18-53.pth"
 MLP_MODEL = "MLP_2021-04-12 19-52.pth"
 
 MLP_INPUT = 10000  # length of hog feature descriptors
@@ -73,6 +73,7 @@ class EmotionRecognition:
             logger.info("Invalid Model Type")
 
     def get_data(self):
+        logger.info('Loading test data')
         if self.model_type == "SVM":
             X_test, y_test = load_data(
                 DATASET_DIR, "test", hog_dict=dict(), batch_size=None, method="sift", shuffle=False
@@ -103,6 +104,7 @@ class EmotionRecognition:
             logger.info("Invalid Model Type")
 
     def predict_all(self, visualise=False):
+        logger.info("Making predictions on test data")
         self.get_data()
         if self.model_type == "SVM":
             predictions = self.model.predict(self.X)
@@ -213,7 +215,7 @@ class EmotionRecognitionVideo(EmotionRecognition):
 
     def get_faces(self, frames):
         self.min_size = self.height // 14
-        profile_face_tolerance = 0.75
+        profile_face_tolerance = 0.70
         profe_face_high = 1 + profile_face_tolerance
         profe_face_low = 1 - profile_face_tolerance
 
@@ -221,10 +223,10 @@ class EmotionRecognitionVideo(EmotionRecognition):
         face_dict = OrderedDict()
         for idx, frame in tqdm(enumerate(frames), total=len(frames)):
             face_boxes = self.face_cascade.detectMultiScale(
-                frame, 1.03, 35, minSize=(self.min_size, self.min_size)
+                frame, 1.03, 40, minSize=(self.min_size, self.min_size)
             )
             profile_boxes = self.profile_cascade.detectMultiScale(
-                frame, 1.03, 35, minSize=(self.min_size, self.min_size)
+                frame, 1.03, 40, minSize=(self.min_size, self.min_size)
             )
             logger.info(f"{len(face_boxes)} faces")
             logger.info(f"{len(profile_boxes)} profiles")
@@ -249,8 +251,8 @@ class EmotionRecognitionVideo(EmotionRecognition):
 
             if isinstance(face_boxes, np.ndarray):
                 face_images = [self.extract_face(frame, face_arr) for face_arr in face_boxes]
-                plt.imshow(random.choice(face_images))
-                plt.show()
+                # plt.imshow(random.choice(face_images))
+                # plt.show()
                 face_dict[idx] = list(zip(face_boxes, face_images))
             else:
                 face_dict[idx] = list()
@@ -307,17 +309,3 @@ class EmotionRecognitionVideo(EmotionRecognition):
         rect_height = index_arr[3]
         extracted = frame[y : y + rect_height, x : x + rect_width]
         return extracted
-
-
-if __name__ == "__main__":
-    # em = EmotionRecognition(DATASET_DIR + "/test", model_type="CNN")
-    # preds, metrics = em.predict_all(visualise=True)
-    # logger.info(f"{str(metrics)}")
-
-    erv = EmotionRecognitionVideo(model_type="CNN")
-    frames = erv.predict_video(VIDEOS_DIR + "\pexels-rodnae-productions-5617899.mp4")
-    # frames = erv.predict_video(VIDEOS_DIR + '\pexels-diva-plavalaguna-6194825.mp4')
-    # frames = erv.predict_video(VIDEOS_DIR + '\pexels-diva-plavalaguna-6194803.mp4')
-    # frames = erv.predict_video(VIDEOS_DIR + "\WIN_20210413_20_36_01_Pro.mp4")
-    # frames = erv.predict_video(VIDEOS_DIR + '\pexels-diva-plavalaguna-6194825.mp4')
-    # frames = erv.predict_video(VIDEOS_DIR + '\pexels-rodnae-productions-5617899.mp4')
