@@ -283,7 +283,7 @@ def plot_sample_predictions(
         ax[i].set_title(f"Label: {LABELS[y_true[i]]} \n Prediction: {LABELS[y_pred[i]]}")
         ax[i].set_axis_off()
 
-    fig.tight_layout()
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     if writer:
         writer.add_figure("Sample Predictions", fig)
     else:

@@ -26,7 +26,7 @@ DATASET_DIR = str(PROJECT_DIR.joinpath("cw_dataset"))
 MODELS_DIR = str(PROJECT_DIR.joinpath("models"))
 VIDEOS_DIR = str(PROJECT_DIR.joinpath("video"))
 
-SVM_MODEL = "SIFT-SVC_2021-04-12 22-08.joblib"
+SVM_MODEL = "SIFT-SVC_2021-04-13 05-23.joblib"
 CNN_MODEL = "CNN_2021-04-14 18-53.pth"
 MLP_MODEL = "MLP_2021-04-12 19-52.pth"
 
@@ -179,12 +179,14 @@ class EmotionRecognitionVideo(EmotionRecognition):
     def save_video(self, frames):
         logger.info("Saving video")
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        file_path = self.video_path.split(".")[0] + "_OUTPUT.mp4"
         output_video = cv2.VideoWriter(
-            self.video_path.split(".")[0] + "_OUTPUT.mp4",
+            file_path,
             fourcc,
             self.fps,
             (self.width, self.height),
         )
+        logger.info(f'Saved output to {file_path}')
         for frame in frames:
             frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
             output_video.write(frame)
