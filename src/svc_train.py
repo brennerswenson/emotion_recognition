@@ -63,7 +63,7 @@ def main(args):
         batch_size=None,
         shuffle=False,
         drop_last=False,
-        weighted_sampling=True,
+        weight_samp=True,
     )
 
     metrics_dict = dict()

@@ -40,7 +40,7 @@ def main(args):
         batch_size=args.batch_size,
         shuffle=False,
         drop_last=False,
-        weighted_sampling=True,
+        weight_samp=True,
     )
     val_dl = load_data(DATASET_DIR, "val", "hog", hog_dict=hog_dict, batch_size=args.batch_size)
 
@@ -100,7 +100,7 @@ def main(args):
         batch_size=args.batch_size,
         shuffle=False,
         drop_last=False,
-        weighted_sampling=True,
+        weight_samp=True,
     )
     plot_sample_predictions(
         X_val,

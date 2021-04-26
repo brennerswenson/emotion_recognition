@@ -76,7 +76,12 @@ class EmotionRecognition:
         logger.info('Loading test data')
         if self.model_type == "SVM":
             X_test, y_test = load_data(
-                DATASET_DIR, "test", hog_dict=dict(), batch_size=None, method="sift", shuffle=False
+                DATASET_DIR,
+                "test",
+                hog_dict=dict(),
+                batch_size=None,
+                method="sift",
+                shuffle=False
             )
             self.X = X_test
             self.y = y_test
@@ -116,7 +121,7 @@ class EmotionRecognition:
                 batch_size=SVM_BATCH_SIZE,
                 shuffle=False,
                 drop_last=False,
-                weighted_sampling=False,
+                weight_samp=False,
             )
             metrics_dict = dict()
             metrics_dict["accuracy"] = metrics.accuracy_score(self.y, predictions) * 100

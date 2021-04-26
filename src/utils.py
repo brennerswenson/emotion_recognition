@@ -21,6 +21,7 @@ from torch.utils.tensorboard.summary import hparams
 from torchvision import datasets, transforms
 from tqdm import tqdm
 import warnings
+
 sns.set()
 
 sns.set_style(rc=PLOT_RC)
@@ -35,21 +36,40 @@ from collections import Counter
 
 
 def load_data(
-    path,
-    subset,
-    method,
-    hog_dict,
-    batch_size,
-    shuffle=True,
-    drop_last=False,
-    weighted_sampling=False,
+        path,
+        subset,
+        method,
+        hog_dict,
+        batch_size,
+        shuffle=True,
+        drop_last=False,
+        weight_samp=False,
 ):
+    """
+    Function to dynamically load and preprocess images depending on the data subset (train/test/valid)
+    as well as the pre-processing methods (SIFT, HOG, CNN).
+
+    Args:
+        path (str): Directory containing image files.
+        subset (str): String e.g. "train" or "test".
+        method (str): Type of pre-processing strategy e.g. "hog", "sift", "svm".
+        hog_dict (dict): Dictionary containing hyperparameters for HOG feature extraction.
+        batch_size (int or None): Training batch size for DataLoader processing methods.
+        shuffle (bool): Indicates whether the returned DataLodaer will shuffle every batch
+        drop_last (bool): Indicates whether or not the last incomplete batch should be discarded or not
+        weight_samp (bool): Indicates if random weighted sampling should be applied to DataLoader
+
+    Returns: (DataLoader or tuple) Preprocessed dataset
+
+    """
     if not os.path.exists(path):
         logger.info("Please download training/testing data to cw_dataset directory")
         return None
 
+    # create a string identifier with the data subset and model type
     key = subset + "_" + method
 
+    # define the image augmentation transforms
     augmentation_transforms = [
         transforms.ColorJitter(0.50, 0.50, 0.15, 0.15),
         transforms.GaussianBlur(3, (0.001, 1)),
@@ -74,6 +94,7 @@ def load_data(
                 ),
             ]
         ),
+        # validation/test transforms do not have data augmentation
         "val_hog": transforms.Compose(
             [
                 HOG(
@@ -117,6 +138,9 @@ def load_data(
 
     dataset = datasets.ImageFolder(path + "/" + subset, transform=transform_dict[key])
 
+    # for the methods that don't use batches for training
+    # iterate through the dataset one time using image augmentation
+    # and return the images/labels in a tuple
     if method in ["normal", "sift"]:
         images = list()
         labels = list()
@@ -127,16 +151,17 @@ def load_data(
             labels.append(label)
         logger.info(f"Successfully loaded {len(images)} images")
         return images, labels
+    # if CNN or MLP, then create and return a DataLoader
     else:
         num_workers = len(dataset.imgs) // batch_size // 2
         num_workers = num_workers if num_workers <= 6 else 6
-        # num_workers = num_workers if subset != 'test' else 0
         if num_workers > 0:
             logger.info(
                 f"{subset} DataLoader using {num_workers} workers for {len(dataset.imgs)} images"
             )
         sampler = None
-        if weighted_sampling:
+        # to combat class imbalance, weighted sampling can be used
+        if weight_samp:
             class_distributions = list(Counter(dataset.targets).values())
             weights = 1 / torch.Tensor(class_distributions).float()
             sample_weights = weights[dataset.targets]
@@ -144,6 +169,7 @@ def load_data(
                 f"Using stratified sampling for {subset} data with weights "
                 f"{pformat(list(zip(list(weights.float().numpy()), dataset.classes)))}"
             )
+            # create the sampler object with the specified weights for each target class
             sampler = data.sampler.WeightedRandomSampler(
                 sample_weights,
                 num_samples=len(sample_weights),
@@ -258,7 +284,8 @@ class HOG:
 
 
 def plot_sample_predictions(
-    X_test, y_pred, y_true, num_rows, num_cols, model_type, tensor=False, writer=None, figsize=(16,9), accuracy=None
+        X_test, y_pred, y_true, num_rows, num_cols, model_type, tensor=False, writer=None, figsize=(16, 9),
+        accuracy=None
 ):
     random_idx = random.sample(range(0, len(X_test)), num_rows * num_cols)
 
@@ -395,15 +422,15 @@ def get_learning_rate(opt):
 
 
 def train_model(
-    num_epochs,
-    lr_max,
-    nn_model,
-    training_dl,
-    validation_dl,
-    weight_decay=0,
-    gradient_clip=None,
-    optimizer=torch.optim.SGD,
-    writer=None,
+        num_epochs,
+        lr_max,
+        nn_model,
+        training_dl,
+        validation_dl,
+        weight_decay=0,
+        gradient_clip=None,
+        optimizer=torch.optim.SGD,
+        writer=None,
 ):
     train_history = list()
     opt = optimizer(nn_model.parameters(), lr_max, weight_decay=weight_decay)
@@ -421,9 +448,9 @@ def train_model(
         losses = list()
         learning_rates = list()
         for batch_idx, b in tqdm(
-            enumerate(training_dl, 0),
-            total=len(training_dl),
-            bar_format="{desc:<5.5}{percentage:3.0f}%|{bar:10}{r_bar}",
+                enumerate(training_dl, 0),
+                total=len(training_dl),
+                bar_format="{desc:<5.5}{percentage:3.0f}%|{bar:10}{r_bar}",
         ):
             loss_item = nn_model.train_step(b)
             losses.append(loss_item)
@@ -453,12 +480,12 @@ def train_model(
 
 
 def plot_confusion_matrix(
-    y_val,
-    all_preds,
-    unique_labels,
-    model,
-    writer=None,
-    no_preds=False,
+        y_val,
+        all_preds,
+        unique_labels,
+        model,
+        writer=None,
+        no_preds=False,
 ):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
