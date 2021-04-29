@@ -420,5 +420,5 @@ class EmotionRecognitionVideo(EmotionRecognition):
 
 
 if __name__ == "__main__":
-    em = EmotionRecognition(test_path=DATASET_DIR + "\\test\\", model_type="SVM")
+    em = EmotionRecognition(test_path=os.path.join(DATASET_DIR,  "test"), model_type="SVM")
     em.predict(visualise=True, num_test_images=4)

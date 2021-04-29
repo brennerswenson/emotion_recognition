@@ -75,9 +75,9 @@ def load_data(
         transforms.GaussianBlur(3, (0.001, 1)),
         transforms.RandomGrayscale(p=0.5),
         transforms.RandomHorizontalFlip(),
-        transforms.RandomAffine(20, scale=(0.7, 1.3)),
+        transforms.RandomAffine(25, scale=(0.7, 1.3)),
         transforms.ToTensor(),
-        transforms.RandomErasing(p=0.50),
+        transforms.RandomErasing(p=0.66),
         transforms.ToPILImage(),
     ]
 
@@ -136,7 +136,7 @@ def load_data(
         "test_cnn": transforms.Compose([transforms.ToTensor()]),
     }
 
-    dataset = MyDataLoader(path + "\\" + subset, transform=transform_dict[key])
+    dataset = MyDataLoader(os.path.join(path, subset), transform=transform_dict[key])
 
     # for the methods that don't use batches for training
     # iterate through the dataset one time using image augmentation
