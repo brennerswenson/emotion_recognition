@@ -27,7 +27,7 @@ MODELS_DIR = str(PROJECT_DIR.joinpath("models"))
 VIDEOS_DIR = str(PROJECT_DIR.joinpath("video"))
 
 SVM_MODEL = "SIFT-SVC_2021-04-13 05-23.joblib"
-CNN_MODEL = "CNN_2021-04-14 18-53.pth"
+CNN_MODEL = "CNN_2021-04-29 10-11.pth"
 MLP_MODEL = "MLP_2021-04-12 19-52.pth"
 
 MLP_INPUT = 10000  # length of hog feature descriptors
@@ -284,8 +284,8 @@ class EmotionRecognitionVideo(EmotionRecognition):
         Returns (dict): Ordered dictionary containing all of the faces found in each frame.
 
         """
-        self.min_size = self.height // 14
-        profile_face_tolerance = 0.50
+        self.min_size = self.height // 10
+        profile_face_tolerance = 1
         profe_face_high = 1 + profile_face_tolerance
         profe_face_low = 1 - profile_face_tolerance
 
@@ -294,10 +294,10 @@ class EmotionRecognitionVideo(EmotionRecognition):
         for idx, frame in tqdm(enumerate(frames), total=len(frames)):
             # detect faces using both models
             face_boxes = self.face_cascade.detectMultiScale(
-                frame, 1.02, 40, minSize=(self.min_size, self.min_size)
+                frame, 1.03, 40, minSize=(self.min_size, self.min_size)
             )
             profile_boxes = self.profile_cascade.detectMultiScale(
-                frame, 1.02, 50, minSize=(self.min_size, self.min_size)
+                frame, 1.03, 40, minSize=(self.min_size, self.min_size)
             )
             logger.info(f"{len(face_boxes)} faces")
             logger.info(f"{len(profile_boxes)} profiles")
@@ -315,7 +315,7 @@ class EmotionRecognitionVideo(EmotionRecognition):
                         for x in similarity_scores
                         if not (
                             (profe_face_low <= x[2][0] <= profe_face_high)
-                            and (profe_face_low <= x[2][1] <= profe_face_high)
+                            or (profe_face_low <= x[2][1] <= profe_face_high)
                         )
                     ]
                 )
@@ -332,8 +332,8 @@ class EmotionRecognitionVideo(EmotionRecognition):
             if isinstance(face_boxes, np.ndarray):
                 # extract the face images from the video frames and add to return array at index idx
                 face_images = [self._extract_face(frame, face_arr) for face_arr in face_boxes]
-                # plt.imshow(random.choice(face_images))
-                # plt.show()
+                plt.imshow(random.choice(face_images))
+                plt.show()
                 face_dict[idx] = list(zip(face_boxes, face_images))
             else:
                 face_dict[idx] = list()
@@ -422,5 +422,8 @@ class EmotionRecognitionVideo(EmotionRecognition):
 
 
 if __name__ == "__main__":
-    em = EmotionRecognition(test_path=os.path.join(DATASET_DIR,  "test"), model_type="MLP")
-    em.predict(visualise=True, num_test_images=4)
+    # em = EmotionRecognition(test_path=os.path.join(DATASET_DIR,  "test"), model_type="MLP")
+    # em.predict(visualise=True, num_test_images=4)
+
+    erv = EmotionRecognitionVideo('CNN')
+    erv.predict_video(os.path.join(VIDEOS_DIR, 'pexels-diva-plavalaguna-6194825.mp4'))
