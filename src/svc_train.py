@@ -27,14 +27,14 @@ def main(args):
     logger.info(f"Input args: {pformat(args)}")
 
     # load in the training and validation data
-    X_train, y_train = utils.load_data(
+    X_train, y_train, _ = utils.load_data(
         DATASET_DIR,
         "train",
         hog_dict=dict(),
         batch_size=None,
         method="sift"
     )
-    X_val, y_val = utils.load_data(
+    X_val, y_val, _ = utils.load_data(
         DATASET_DIR, "val",
         hog_dict=dict(),
         batch_size=None,
@@ -68,7 +68,7 @@ def main(args):
         writer=writer
     )
     # load it in again to get the images instead of SIFT feature descriptors
-    X_val, _ = utils.load_data(
+    X_val, _, _ = utils.load_data(
         DATASET_DIR,
         "val",
         "normal",
