@@ -332,8 +332,8 @@ class EmotionRecognitionVideo(EmotionRecognition):
             if isinstance(face_boxes, np.ndarray):
                 # extract the face images from the video frames and add to return array at index idx
                 face_images = [self._extract_face(frame, face_arr) for face_arr in face_boxes]
-                plt.imshow(random.choice(face_images))
-                plt.show()
+                # plt.imshow(random.choice(face_images))
+                # plt.show()
                 face_dict[idx] = list(zip(face_boxes, face_images))
             else:
                 face_dict[idx] = list()
