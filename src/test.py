@@ -146,7 +146,8 @@ class EmotionRecognition:
         if self.model_type == "SVM":
             predictions = self.model.predict(self.X)
 
-            self.X = [Image.open(x) for x in self.file_paths]
+            self.X = [cv2.imread(x) for x in self.file_paths]
+            self.X = [cv2.cvtColor(x, cv2.COLOR_BGR2RGB) for x in self.X]
             self.X = [np.asarray(x) for x in self.X]
 
             metrics_dict = dict()
@@ -166,7 +167,8 @@ class EmotionRecognition:
                 self.model, self.data_loader, "cpu", num_images=num_test_images
             )
             # load in images instead of HOG feature descriptors for viz
-            self.X = [Image.open(x) for x in file_paths]
+            self.X = [cv2.imread(x) for x in self.file_paths]
+            self.X = [cv2.cvtColor(x, cv2.COLOR_BGR2RGB) for x in self.X]
             self.X = [np.asarray(x) for x in self.X]
 
         if visualise:
