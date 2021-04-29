@@ -167,7 +167,7 @@ class EmotionRecognition:
                 self.model, self.data_loader, "cpu", num_images=num_test_images
             )
             # load in images instead of HOG feature descriptors for viz
-            self.X = [cv2.imread(x) for x in self.file_paths]
+            self.X = [cv2.imread(x) for x in file_paths]
             self.X = [cv2.cvtColor(x, cv2.COLOR_BGR2RGB) for x in self.X]
             self.X = [np.asarray(x) for x in self.X]
 
@@ -422,5 +422,5 @@ class EmotionRecognitionVideo(EmotionRecognition):
 
 
 if __name__ == "__main__":
-    em = EmotionRecognition(test_path=os.path.join(DATASET_DIR,  "test"), model_type="SVM")
+    em = EmotionRecognition(test_path=os.path.join(DATASET_DIR,  "test"), model_type="MLP")
     em.predict(visualise=True, num_test_images=4)

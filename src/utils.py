@@ -174,6 +174,7 @@ def load_data(
     else:
         num_workers = len(dataset.imgs) // batch_size // 2
         num_workers = num_workers if num_workers <= 6 else 6
+        num_workers = num_workers if num_images is not None else 0
         if num_workers > 0:
             logger.info(
                 f"{subset} DataLoader using {num_workers} workers for {len(dataset.imgs)} images"
