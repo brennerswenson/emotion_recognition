@@ -71,13 +71,13 @@ def load_data(
 
     # define the image augmentation transforms
     augmentation_transforms = [
-        transforms.ColorJitter(0.50, 0.50, 0.25, 0.25),
+        transforms.ColorJitter(0.50, 0.50, 0.20, 0.20),
         transforms.GaussianBlur(3, (0.001, 1)),
         transforms.RandomGrayscale(p=0.5),
         transforms.RandomHorizontalFlip(),
         transforms.RandomAffine(20, scale=(0.7, 1.3)),
         transforms.ToTensor(),
-        transforms.RandomErasing(p=0.66),
+        transforms.RandomErasing(p=0.50),
         transforms.ToPILImage(),
     ]
 

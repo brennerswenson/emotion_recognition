@@ -141,7 +141,7 @@ class EmotionRecognition:
         Returns: (tuple) Predictions, metric_dict
 
         """
-        logger.info("Making predictions on all test data")
+        logger.info("Making predictions on test data")
         self._get_data(num_images=num_test_images)
         if self.model_type == "SVM":
             predictions = self.model.predict(self.X)
@@ -420,8 +420,5 @@ class EmotionRecognitionVideo(EmotionRecognition):
 
 
 if __name__ == "__main__":
-    # em = EmotionRecognition(test_path=DATASET_DIR + "/test/", model_type="SVM")
-    # em.predict(visualise=True, num_test_images=4)
-
-    erv = EmotionRecognitionVideo('CNN')
-    erv.predict_video(VIDEOS_DIR + '/pexels-diva-plavalaguna-6194825.mp4')
+    em = EmotionRecognition(test_path=DATASET_DIR + "/test/", model_type="SVM")
+    em.predict(visualise=True, num_test_images=4)
