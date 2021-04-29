@@ -136,7 +136,7 @@ def load_data(
         "test_cnn": transforms.Compose([transforms.ToTensor()]),
     }
 
-    dataset = MyDataLoader(path + "/" + subset, transform=transform_dict[key])
+    dataset = MyDataLoader(path + "\\" + subset, transform=transform_dict[key])
 
     # for the methods that don't use batches for training
     # iterate through the dataset one time using image augmentation

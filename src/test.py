@@ -36,7 +36,7 @@ MLP_HOG_DICT = {"orientation": 16, "pix_per_cell": (4, 4)}
 
 class EmotionRecognition:
     """Class to classify emotions found in images using a variety of methods."""
-    def __init__(self, test_path=None, model_type=None, batch_size=None):
+    def __init__(self, test_path=None, model_type=None, batch_size=1):
         """
 
         Args:
@@ -420,5 +420,5 @@ class EmotionRecognitionVideo(EmotionRecognition):
 
 
 if __name__ == "__main__":
-    em = EmotionRecognition(test_path=DATASET_DIR + "/test/", model_type="SVM")
+    em = EmotionRecognition(test_path=DATASET_DIR + "\\test\\", model_type="SVM")
     em.predict(visualise=True, num_test_images=4)
