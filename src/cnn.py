@@ -1,10 +1,17 @@
-
 import torch.nn as nn
 from utils import BaseModel
 
 
 class EmotionRecCNN(BaseModel):
+    """CNN for classifying human emotions."""
+
     def __init__(self, output_size, dropout_rate):
+        """
+
+        Args:
+            output_size (int): Number of unique targets.
+            dropout_rate (float): Between zero and one, the value used for dropout throughout network.
+        """
         super(EmotionRecCNN, self).__init__()
 
         self.dropout_rate = dropout_rate
@@ -20,7 +27,6 @@ class EmotionRecCNN(BaseModel):
             nn.BatchNorm2d(64),
             nn.MaxPool2d(2, 2),  # output: 64 x 50 x 50
             nn.Dropout(self.dropout_rate),
-
             nn.Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
             nn.ReLU(),
             nn.BatchNorm2d(128),
@@ -30,7 +36,6 @@ class EmotionRecCNN(BaseModel):
             nn.BatchNorm2d(128),
             nn.MaxPool2d(2, 2),  # output: 128 x 25 x 25
             nn.Dropout(self.dropout_rate),
-
             nn.Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
             nn.ReLU(),
             nn.BatchNorm2d(256),
@@ -40,7 +45,6 @@ class EmotionRecCNN(BaseModel):
             nn.BatchNorm2d(256),
             nn.MaxPool2d(5, 5),  # output: 256 x 5 x 5
             nn.Dropout(self.dropout_rate),
-
             nn.Flatten(),
             nn.Linear(256 * 5 * 5, 1024),
             nn.Dropout(self.dropout_rate),

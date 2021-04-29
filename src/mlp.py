@@ -8,7 +8,26 @@ logger = logging.getLogger(__name__)
 
 
 class EmotionRecMLP(BaseModel):
-    def __init__(self, input_size, hidden_size_1, hidden_size_2, hidden_size_3, num_outputs, dropout_rate=0.25):
+    """Multilayer Perceptron for classifying human emotions."""
+    def __init__(
+        self,
+        input_size,
+        hidden_size_1,
+        hidden_size_2,
+        hidden_size_3,
+        num_outputs,
+        dropout_rate=0.25,
+    ):
+        """
+
+        Args:
+            input_size (int): Number of input neurons.
+            hidden_size_1 (int): Neurons in the first hidden layer.
+            hidden_size_2 (int): Neurons in the second hidden layer.
+            hidden_size_3 (int): Neurons in the third hidden layer.
+            num_outputs (int): Neurons in the output layer.
+            dropout_rate (float): Dropout rate applied between all layers except the output.
+        """
         super(EmotionRecMLP, self).__init__()
 
         self.input_size = input_size
@@ -26,6 +45,7 @@ class EmotionRecMLP(BaseModel):
         self.fc4 = nn.Linear(self.hidden_size_3, self.num_outputs)
 
     def forward(self, x):
+        """Forward pass through the network."""
         x = self.dropout(F.relu(self.fc1(x)))
         x = self.dropout(F.relu(self.fc2(x)))
         x = self.dropout(F.relu(self.fc3(x)))

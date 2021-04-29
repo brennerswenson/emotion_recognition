@@ -7,10 +7,7 @@ from pprint import pformat
 import torch
 from mlp import EmotionRecMLP
 from sklearn import metrics
-from utils import (DLDevice, SummaryWriter, eval_model, get_avail_device,
-                   get_pred_metrics, load_data, plot_confusion_matrix,
-                   plot_history, plot_sample_predictions, send_to_device,
-                   train_model)
+import utils
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -21,18 +18,23 @@ MODELS_DIR = str(PROJECT_DIR.joinpath("models"))
 OUTPUTS_DIR = str(PROJECT_DIR.joinpath("outputs"))
 RUN_NAME = f"MLP_{time.strftime('%Y-%m-%d %H-%M')}"
 
+
 def main(args):
-    writer = SummaryWriter(log_dir=str(PROJECT_DIR) + f"/logs/{RUN_NAME}")
+    # instantiate summary writer and get optimizer type
+    writer = utils.SummaryWriter(log_dir=str(PROJECT_DIR) + f"/logs/{RUN_NAME}")
+    # set the divisor values that determine the ratio of hidden layer sizes to input layer
     hid_layer_div = (2, 4, 8) if args.hidden_layer_divisor == "Halves" else (3, 6, 9)
     optimizer = torch.optim.Adam if args.optimizer == "adam" else torch.optim.SGD
     logger.info(f"Input args: {pformat(args)}")
 
+    # dictionary containing hyperparameters for HOG feature descriptor
     hog_dict = {
         "orientation": args.orientation,
         "pix_per_cell": (args.pix_per_cell, args.pix_per_cell),
     }
 
-    train_dl = load_data(
+    # load the training and validation data
+    train_dl = utils.load_data(
         DATASET_DIR,
         "train",
         "hog",
@@ -42,21 +44,33 @@ def main(args):
         drop_last=False,
         weight_samp=True,
     )
-    val_dl = load_data(DATASET_DIR, "val", "hog", hog_dict=hog_dict, batch_size=args.batch_size)
+    val_dl = utils.load_data(
+        DATASET_DIR,
+        "val",
+        "hog",
+        hog_dict=hog_dict,
+        batch_size=args.batch_size
+    )
 
+    # iterate through one batch to get the input size, then break out of loop
     for i, batch in enumerate(train_dl):
-        HOG_des_arr, tmp_labels = batch
+        HOG_des_arr, tmp_labels, img_paths = batch
         # get the size of the input feature
         input_size = len(HOG_des_arr[0])
         break
 
+    # set the hidden layer sizes
     hl_1 = input_size // hid_layer_div[0]
     hl_2 = input_size // hid_layer_div[1]
     hl_3 = input_size // hid_layer_div[2]
 
-    device = get_avail_device()
-    train_dld = DLDevice(train_dl, device)
-    val_dld = DLDevice(val_dl, device)
+    # determine training device, create DataLoaders for both training
+    # and for validation images. Send each batch to the device upon iteration
+    device = utils.get_avail_device()
+    train_dld = utils.DLDevice(train_dl, device)
+    val_dld = utils.DLDevice(val_dl, device)
+
+    # instantiate the MLP model
     model = EmotionRecMLP(
         input_size,
         hl_1,
@@ -67,10 +81,12 @@ def main(args):
     )
     # just for adding model to tensorboard
     data_iter = iter(train_dl)
-    images, labels = data_iter.next()
+    images, labels, _ = data_iter.next()
     writer.add_graph(model, images)
-    model = send_to_device(model, device)
-    hist = train_model(
+
+    # send the model to the GPU and train the model
+    model = utils.send_to_device(model, device)
+    hist = utils.train_model(
         args.epochs,
         args.learning_rate,
         model,
@@ -79,20 +95,30 @@ def main(args):
         weight_decay=args.weight_decay,
         optimizer=optimizer,
         writer=writer,
-
     )
-    logger.info((eval_model(model, val_dld)))
+    # evaluate performance, save model weights
+    logger.info((utils.eval_model(model, val_dld)))
     model_name = f"{RUN_NAME}.pth"
     model_file_name = MODELS_DIR + "/" + model_name
     torch.save(model.state_dict(), model_file_name)
 
-    all_preds, y_val, X_val, metrics_dict = get_pred_metrics(model, val_dld, device)
+    # get predictions for entire dataset along with metrics
+    all_preds, y_val, X_val, metrics_dict, _ = utils.get_pred_metrics(model, val_dld, device)
     logger.info(metrics_dict)
     logger.info(print(metrics.classification_report(y_val.cpu(), all_preds.cpu())))
+
+    # plot confusion matrix, and sample predictions, then add them to tensorboard run
     unique_labels = [int(x) - 1 for x in val_dl.dataset.classes]
-    plot_confusion_matrix(y_val.cpu(), all_preds.cpu(), unique_labels, model='HOG-MLP', no_preds=False, writer=writer)
+    utils.plot_confusion_matrix(
+        y_val.cpu(),
+        all_preds.cpu(),
+        unique_labels,
+        model="HOG-MLP",
+        no_preds=False,
+        writer=writer
+    )
     # load it in again to get the images instead of HOG feature descriptors
-    X_val, y_val = load_data(
+    X_val, y_val, file_paths = utils.load_data(
         DATASET_DIR,
         "val",
         "normal",
@@ -102,16 +128,17 @@ def main(args):
         drop_last=False,
         weight_samp=True,
     )
-    plot_sample_predictions(
+    utils.plot_sample_predictions(
         X_val,
         all_preds.cpu(),
         y_val,
-        4, 5,
+        4,
+        5,
         "HOG-MLP",
         tensor=False,
         writer=writer
     )
-    plot_history(hist, writer)
+    utils.plot_history(hist, writer)
     writer.add_hparams(
         hparam_dict={
             "Pixels Per Cell": hog_dict["pix_per_cell"][0],
@@ -127,7 +154,7 @@ def main(args):
             "Optimizer": args.optimizer,
             "Weight Decay": args.weight_decay,
         },
-        metric_dict=metrics_dict
+        metric_dict=metrics_dict,
     )
 
 
@@ -168,10 +195,19 @@ if __name__ == "__main__":
         help="Type of optimizer to use during training",
         choices=["adam", "sgd"],
     )
-
-    parser.add_argument("-or", "--orientation", default=8, type=int, help="Orientations for HOG")
     parser.add_argument(
-        "-p", "--pix-per-cell", default=4, type=int, help="Pixels per cell for HOG"
+        "-or",
+        "--orientation",
+        default=8,
+        type=int,
+        help="Orientations for HOG"
+    )
+    parser.add_argument(
+        "-p",
+        "--pix-per-cell",
+        default=4,
+        type=int,
+        help="Pixels per cell for HOG"
     )
     parser.add_argument(
         "-hl",
@@ -190,4 +226,3 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     main(args)
-

@@ -10,8 +10,8 @@ from pprint import pformat
 import numpy as np
 from sklearn import metrics
 from svc import EmotionRecSVC
-from utils import (SummaryWriter, load_data, plot_confusion_matrix,
-                   plot_sample_predictions)
+import utils
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -22,22 +22,25 @@ RUN_NAME = f"SIFT-SVC_{time.strftime('%Y-%m-%d %H-%M')}"
 
 
 def main(args):
-    writer = SummaryWriter(log_dir=str(PROJECT_DIR) + f"/logs/{RUN_NAME}")
+    # instantiate summary writer
+    writer = utils.SummaryWriter(log_dir=str(PROJECT_DIR) + f"/logs/{RUN_NAME}")
     logger.info(f"Input args: {pformat(args)}")
-    X_train, y_train = load_data(
+
+    # load in the training and validation data
+    X_train, y_train = utils.load_data(
         DATASET_DIR,
         "train",
         hog_dict=dict(),
         batch_size=None,
         method="sift"
     )
-    X_val, y_val = load_data(
-        DATASET_DIR,
-        "val",
+    X_val, y_val = utils.load_data(
+        DATASET_DIR, "val",
         hog_dict=dict(),
         batch_size=None,
         method="sift"
     )
+    # instantiate and fit the SVC model
     model = EmotionRecSVC(
         kernel=args.kernel,
         C=args.c_constant,
@@ -46,16 +49,26 @@ def main(args):
     )
     model.fit_transform(X_train, y_train)
 
+    # save down the model as a .joblib file
     model_name = f"{RUN_NAME}.joblib"
     model_file_name = MODELS_DIR + "/" + model_name
     joblib.dump(model, model_file_name)
 
+    # predict on the validation data
     predicted = model.predict(X_val)
 
+    # get the unique class labels and plot confusion matrix
     labels = np.unique(np.concatenate([y_val, predicted], axis=0))
-    plot_confusion_matrix(y_val, predicted, labels, model="SIFT-SVC", no_preds=True, writer=writer)
+    utils.plot_confusion_matrix(
+        y_val,
+        predicted,
+        labels,
+        model="SIFT-SVC",
+        no_preds=True,
+        writer=writer
+    )
     # load it in again to get the images instead of SIFT feature descriptors
-    X_val, _ = load_data(
+    X_val, _ = utils.load_data(
         DATASET_DIR,
         "val",
         "normal",
@@ -69,7 +82,8 @@ def main(args):
     metrics_dict = dict()
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        plot_sample_predictions(X_val, predicted, y_val, 4, 5, "SIFT-SVC", writer=writer)
+        # plot sample predictions and save image to SummaryWriter
+        utils.plot_sample_predictions(X_val, predicted, y_val, 4, 5, "SIFT-SVC", writer=writer)
         logger.info(print(metrics.classification_report(y_val, predicted)))
         metrics_dict["accuracy"] = metrics.accuracy_score(y_val, predicted) * 100
         metrics_dict["recall"] = metrics.recall_score(y_val, predicted, average="weighted")
@@ -77,6 +91,7 @@ def main(args):
         metrics_dict["f1_score"] = metrics.f1_score(y_val, predicted, average="weighted")
     logger.info(str(metrics_dict))
 
+    # add hyperparameters to tensorboard writer
     writer.add_hparams(
         hparam_dict={
             "Pixels Per Cell": 0,

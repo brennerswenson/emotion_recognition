@@ -32,26 +32,34 @@ MLP_MODEL = "MLP_2021-04-12 19-52.pth"
 
 MLP_INPUT = 10000  # length of hog feature descriptors
 MLP_HOG_DICT = {"orientation": 16, "pix_per_cell": (4, 4)}
-MLP_BATCH_SIZE = 256
-CNN_BATCH_SIZE = 32
-SVM_BATCH_SIZE = 256
 
 
 class EmotionRecognition:
-    def __init__(self, test_path=None, model_type=None):
+    """Class to classify emotions found in images using a variety of methods."""
+    def __init__(self, test_path=None, model_type=None, batch_size=None):
+        """
+
+        Args:
+            test_path (str): Full path to the directory containing the testing data.
+            model_type (str): Acronym denoting the type of model to load/run. SVM, CNN, or MLP.
+            batch_size (int): For MLP and CNN models, the batch size used when predicting.
+                    For testing individual images use a batch size of 1.
+        """
         self.test_path = test_path
         self.model_type = model_type
+        self.batch_size = batch_size
 
         self.is_img = None
         self.model = None
         self.X = None
         self.y = None
         self.data_loader = None
+        self.file_paths = None
 
-        self.get_model()
+        self._get_model()
 
-    def get_model(self):
-
+    def _get_model(self):
+        """Depending on the model passed to the constructor, load the trained model and save to class attribute."""
         if self.model_type == "SVM":
             self.is_img = False
             self.model = joblib.load(f"{MODELS_DIR}/{SVM_MODEL}")
@@ -72,16 +80,28 @@ class EmotionRecognition:
         else:
             logger.info("Invalid Model Type")
 
-    def get_data(self):
-        logger.info('Loading test data')
+    def _get_data(self, num_images):
+        """
+        Load the testing data. This can either be a DataLoader or arrays depending on the model type.
+        Args:
+            num_images (int): Number of images to randomly create predictions for. If not provided, all images
+                    in the testing dataset will be predicted.
+
+        Returns: None
+
+        """
+        total_img = num_images if num_images is not None else "all"
+        logger.info(f"Loading test data for {total_img} images")
+        shuffle = True if num_images is not None else False
         if self.model_type == "SVM":
-            X_test, y_test = load_data(
+            X_test, y_test, self.file_paths = load_data(
                 DATASET_DIR,
                 "test",
                 hog_dict=dict(),
                 batch_size=None,
                 method="sift",
-                shuffle=False
+                shuffle=shuffle,
+                num_images=num_images,
             )
             self.X = X_test
             self.y = y_test
@@ -91,8 +111,8 @@ class EmotionRecognition:
                 "test",
                 "cnn",
                 hog_dict=dict(),
-                batch_size=CNN_BATCH_SIZE,
-                shuffle=False,
+                batch_size=self.batch_size,
+                shuffle=shuffle,
             )
 
         elif self.model_type == "MLP":
@@ -101,28 +121,34 @@ class EmotionRecognition:
                 "test",
                 "hog",
                 hog_dict=MLP_HOG_DICT,
-                batch_size=MLP_BATCH_SIZE,
-                shuffle=False,
+                batch_size=self.batch_size,
+                shuffle=shuffle,
             )
 
         else:
             logger.info("Invalid Model Type")
 
-    def predict_all(self, visualise=False):
-        logger.info("Making predictions on test data")
-        self.get_data()
+    def predict(self, visualise=False, num_test_images=None):
+        """
+        Predict on a subset of images or entire test dataset. Metrics are calculated like F1
+        score, recall, precision, etc. for predictions. If num_test_images not provided,
+        predictions are made for entire test dataset.
+        Args:
+            visualise (bool): Indicates if sample predictions should be plotted or not.
+            num_test_images (int): Number of test images to predict. If not supplied,
+                    all test images will be predicted.
+
+        Returns: (tuple) Predictions, metric_dict
+
+        """
+        logger.info("Making predictions on all test data")
+        self._get_data(num_images=num_test_images)
         if self.model_type == "SVM":
             predictions = self.model.predict(self.X)
-            self.X, self.y = load_data(
-                DATASET_DIR,
-                "test",
-                "normal",
-                hog_dict=dict(),
-                batch_size=SVM_BATCH_SIZE,
-                shuffle=False,
-                drop_last=False,
-                weight_samp=False,
-            )
+
+            self.X = [Image.open(x) for x in self.file_paths]
+            self.X = [np.asarray(x) for x in self.X]
+
             metrics_dict = dict()
             metrics_dict["accuracy"] = metrics.accuracy_score(self.y, predictions) * 100
             metrics_dict["recall"] = metrics.recall_score(self.y, predictions, average="weighted")
@@ -132,15 +158,15 @@ class EmotionRecognition:
             metrics_dict["f1_score"] = metrics.f1_score(self.y, predictions, average="weighted")
 
         elif self.model_type == "CNN":
-            predictions, self.y, self.X, metrics_dict = get_pred_metrics(
-                self.model, self.data_loader, "cpu"
+            predictions, self.y, self.X, metrics_dict, file_paths = get_pred_metrics(
+                self.model, self.data_loader, "cpu", num_images=num_test_images
             )
         elif self.model_type == "MLP":
-            predictions, self.y, _, metrics_dict = get_pred_metrics(
-                self.model, self.data_loader, "cpu"
+            predictions, self.y, _, metrics_dict, file_paths = get_pred_metrics(
+                self.model, self.data_loader, "cpu", num_images=num_test_images
             )
             # load in images instead of HOG feature descriptors for viz
-            self.X = [Image.open(x[0]) for x in self.data_loader.dataset.imgs]
+            self.X = [Image.open(x) for x in file_paths]
             self.X = [np.asarray(x) for x in self.X]
 
         if visualise:
@@ -159,8 +185,17 @@ class EmotionRecognition:
 
 
 class EmotionRecognitionVideo(EmotionRecognition):
+    """Class to classify emotions found in video frames using a variety of approaches."""
     def __init__(self, model_type):
+        """
+
+        Args:
+             model_type (str): Acronym denoting the type of model to load/run. SVM, CNN, or MLP.
+        """
         super(EmotionRecognitionVideo, self).__init__(model_type=model_type)
+        # set haarcascade models as class attributes
+        # one model is for frontal face detection
+        # the other is for profile face detection
         self.face_cascade = cv2.CascadeClassifier(
             cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
         )
@@ -174,14 +209,31 @@ class EmotionRecognitionVideo(EmotionRecognition):
         self.fps = None
 
     def predict_video(self, video_path):
-        self.video_path = video_path
-        frames = self.get_frames()
-        face_dict = self.get_faces(frames)
-        face_dict = self.get_predictions(face_dict)
-        frames = self.annotate_frames(frames, face_dict)
-        self.save_video(frames)
+        """
+        Find and classify emotions in each video frame, then save video.
+        Args:
+            video_path (str): File path to the video to be annotated with emotions.
 
-    def save_video(self, frames):
+        Returns: None
+
+        """
+        self.video_path = video_path
+        frames = self._get_frames()
+        face_dict = self._get_faces(frames)
+        face_dict = self._get_predictions(face_dict)
+        frames = self._annotate_frames(frames, face_dict)
+        self._save_video(frames)
+
+    def _save_video(self, frames):
+        """
+        Iterate through annotated frames and write the frame to a video file. Output is
+        saved in the same directory as the original video file.
+        Args:
+            frames (list): List of frames with annotated emotions and bounding boxes.
+
+        Returns: None
+
+        """
         logger.info("Saving video")
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
         file_path = self.video_path.split(".")[0] + "_OUTPUT.mp4"
@@ -191,20 +243,20 @@ class EmotionRecognitionVideo(EmotionRecognition):
             self.fps,
             (self.width, self.height),
         )
-        logger.info(f'Saved output to {file_path}')
+        logger.info(f"Saved output to {file_path}")
         for frame in frames:
             frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
             output_video.write(frame)
         output_video.release()
 
-    def get_frames(self):
+    def _get_frames(self):
+        """Load in video from video path and read in frames to a list."""
         logger.info("Reading in video")
         video = cv2.VideoCapture(self.video_path)
         self.fps = video.get(cv2.CAP_PROP_FPS)
         frames = list()
         while video.isOpened():
             ret, frame = video.read()
-
             if ret:
                 img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 frames.append(img)
@@ -213,51 +265,71 @@ class EmotionRecognitionVideo(EmotionRecognition):
                 if self.height is None:
                     self.height = frame.shape[0]
                     self.width = frame.shape[1]
-
             else:
                 break
         video.release()
         cv2.destroyAllWindows()
         return frames
 
-    def get_faces(self, frames):
+    def _get_faces(self, frames):
+        """
+        Iterate through all video frames and find faces in each frame. Find all of the portrait
+        oriented faces first, then if there is no face found, fill in with side-profile faces that were
+        found for the same frame.
+        Args:
+            frames (list of np.arrays): List containing all video frames.
+
+        Returns (dict): Ordered dictionary containing all of the faces found in each frame.
+
+        """
         self.min_size = self.height // 14
-        profile_face_tolerance = 0.70
+        profile_face_tolerance = 0.50
         profe_face_high = 1 + profile_face_tolerance
         profe_face_low = 1 - profile_face_tolerance
 
         logger.info(f"Finding faces with min size {self.min_size} x {self.min_size}")
         face_dict = OrderedDict()
         for idx, frame in tqdm(enumerate(frames), total=len(frames)):
+            # detect faces using both models
             face_boxes = self.face_cascade.detectMultiScale(
-                frame, 1.03, 40, minSize=(self.min_size, self.min_size)
+                frame, 1.02, 40, minSize=(self.min_size, self.min_size)
             )
             profile_boxes = self.profile_cascade.detectMultiScale(
-                frame, 1.03, 40, minSize=(self.min_size, self.min_size)
+                frame, 1.02, 50, minSize=(self.min_size, self.min_size)
             )
             logger.info(f"{len(face_boxes)} faces")
             logger.info(f"{len(profile_boxes)} profiles")
 
+            # if we found portrait faces and profile faces
             if isinstance(face_boxes, np.ndarray) and isinstance(profile_boxes, np.ndarray):
+                # if they found the same faces, then we want to keep the portrait face and discard profile
+                # divide the bounding box coordinates of profile faces by portrait faces
+                # if the scores are between, for example, 1.7 and 0.3, then they are likely the same face.
                 similarity_scores = [(x, y, x / y) for y in profile_boxes for x in face_boxes]
-                profile_boxes = np.array([
-                    x[1]
-                    for x in similarity_scores
-                    if not (
-                        (profe_face_low <= x[2][0] <= profe_face_high)
-                        or (profe_face_low <= x[2][1] <= profe_face_high)
-                    )
-                ])
+                # discard the profile faces that match the portrait faces
+                profile_boxes = np.array(
+                    [
+                        x[1]
+                        for x in similarity_scores
+                        if not (
+                            (profe_face_low <= x[2][0] <= profe_face_high)
+                            and (profe_face_low <= x[2][1] <= profe_face_high)
+                        )
+                    ]
+                )
                 if profile_boxes.any():
                     logger.info(f"Adding {len(profile_boxes)} profile not present in faces")
                     face_boxes = np.concatenate((face_boxes, profile_boxes), axis=0)
+            # if profiles are found and no portrait faces are found, set face_boxes = profile_boxes
             if isinstance(profile_boxes, np.ndarray) and isinstance(face_boxes, tuple):
                 face_boxes = profile_boxes
 
             logger.info(f"{len(face_boxes)} objects")
 
+            # if we have found any faces
             if isinstance(face_boxes, np.ndarray):
-                face_images = [self.extract_face(frame, face_arr) for face_arr in face_boxes]
+                # extract the face images from the video frames and add to return array at index idx
+                face_images = [self._extract_face(frame, face_arr) for face_arr in face_boxes]
                 # plt.imshow(random.choice(face_images))
                 # plt.show()
                 face_dict[idx] = list(zip(face_boxes, face_images))
@@ -265,9 +337,18 @@ class EmotionRecognitionVideo(EmotionRecognition):
                 face_dict[idx] = list()
         return face_dict
 
-    def get_predictions(self, face_dict):
+    def _get_predictions(self, face_dict):
+        """
+        Iterate through the dictionary containing all of the faces, and classify the emotions
+        of each face. The faces need to be resized to 100x100. Returns a dictionary containing
+        the coordinates, the face image, and the label.
+        Args:
+            face_dict (dict): Ordered dictionary containing all of the faces found in each frame.
+
+        Returns (dict): Ordered dictionary containing lists of the face coordinates, images, and predictions
+        """
         logger.info("Beginning predictions")
-        pred_face_dict = dict()
+        pred_face_dict = OrderedDict()
         for frame, face_arr in tqdm(face_dict.items(), total=len(face_dict)):
             if frame:
                 pred_face_arr = list()
@@ -286,7 +367,17 @@ class EmotionRecognitionVideo(EmotionRecognition):
         return pred_face_dict
 
     @staticmethod
-    def annotate_frames(frames, face_dict):
+    def _annotate_frames(frames, face_dict):
+        """
+        Iterate through all video frames, place bounding box on faces, and write text
+        of predicted emotion above the bounding box of each face.
+        Args:
+            frames (list of np.arrays): List containing all video frames.
+            face_dict (dict): Ordered dictionary containing lists of the face coordinates, images, and predictions
+
+        Returns (list): List of frames with annotated emotions and bounding boxes.
+
+        """
         logger.info("Annotating video frames")
         annotated_frames = list()
         for frame, (frame_idx, face_arr) in zip(frames, face_dict.items()):
@@ -301,18 +392,36 @@ class EmotionRecognitionVideo(EmotionRecognition):
                             face_label,
                             (x - 20, y - 20),
                             cv2.FONT_HERSHEY_PLAIN,
-                            5,
+                            3,
                             (32, 178, 170),
-                            6,
+                            4,
                         )
             annotated_frames.append(frame)
         return frames
 
     @staticmethod
-    def extract_face(frame, index_arr):
+    def _extract_face(frame, index_arr):
+        """
+        Using coordinates from haarcascades, extract the face from the given frame and
+        return the extracted image.
+        Args:
+            frame (np.array): Video frame with faces to extract
+            index_arr (np.array): Array containing the coordinates and height/width of face to extract.
+
+        Returns (np.array) Slice of video frame with detected face.
+
+        """
         y = index_arr[1]
         x = index_arr[0]
         rect_width = index_arr[2]
         rect_height = index_arr[3]
         extracted = frame[y : y + rect_height, x : x + rect_width]
         return extracted
+
+
+if __name__ == "__main__":
+    # em = EmotionRecognition(test_path=DATASET_DIR + "/test/", model_type="SVM")
+    # em.predict(visualise=True, num_test_images=4)
+
+    erv = EmotionRecognitionVideo('CNN')
+    erv.predict_video(VIDEOS_DIR + '/pexels-diva-plavalaguna-6194825.mp4')

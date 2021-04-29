@@ -17,7 +17,13 @@ if __name__ == "__main__":
             for batch in batch_size_opts:
                 for lr in lr_opts:
                     for dropout in dropout_rates:
-                        tmp_combo = {'wd': wd, 'epoch': epoch, 'batch': batch, 'lr': lr, 'dropout': dropout}
+                        tmp_combo = {
+                            "wd": wd,
+                            "epoch": epoch,
+                            "batch": batch,
+                            "lr": lr,
+                            "dropout": dropout,
+                        }
                         combos.append(tmp_combo)
 
     random.shuffle(combos)
