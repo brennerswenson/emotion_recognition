@@ -289,7 +289,7 @@ class EmotionRecognitionVideo(EmotionRecognition):
 
         """
         self.min_size = self.height // 10
-        profile_face_tolerance = .25
+        profile_face_tolerance = .50
         profe_face_high = 1 + profile_face_tolerance
         profe_face_low = 1 - profile_face_tolerance
 
@@ -298,10 +298,10 @@ class EmotionRecognitionVideo(EmotionRecognition):
         for idx, frame in tqdm(enumerate(frames), total=len(frames)):
             # detect faces using both models
             face_boxes = self.face_cascade.detectMultiScale(
-                frame, 1.04, 30, minSize=(self.min_size, self.min_size)
+                frame, 1.04, 40, minSize=(self.min_size, self.min_size)
             )
             profile_boxes = self.profile_cascade.detectMultiScale(
-                frame, 1.04, 30, minSize=(self.min_size, self.min_size)
+                frame, 1.04, 40, minSize=(self.min_size, self.min_size)
             )
             logger.info(f"{len(face_boxes)} faces")
             logger.info(f"{len(profile_boxes)} profiles")
@@ -396,15 +396,15 @@ class EmotionRecognitionVideo(EmotionRecognition):
                     if face:
                         x, y, w, h = face[0]
                         face_label = face[2]
-                        frame = cv2.rectangle(frame, (x, y), (x + w, y + h), (32, 178, 170), 5)
+                        frame = cv2.rectangle(frame, (x, y), (x + w, y + h), (32, 178, 170), 3)
                         frame = cv2.putText(
                             frame,
                             face_label,
                             (x - 20, y - 20),
                             cv2.FONT_HERSHEY_PLAIN,
-                            6,
+                            4,
                             (32, 178, 170),
-                            9,
+                            4,
                         )
             annotated_frames.append(frame)
         return frames
