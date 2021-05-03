@@ -149,7 +149,7 @@ def load_data(
         if num_images is not None:
             # if we are only pulling a random subset
             logger.info(f'Loading {num_images} images')
-            random_img_idx = random.choices(range(len(dataset)), k=num_images)
+            random_img_idx = random.choices(range(len(dataset))//100, k=num_images)
             for i, (img, label, fp) in enumerate(dataset):
                 if i in random_img_idx:
                     img = img.permute(1, 2, 0).numpy() if torch.is_tensor(img) else img
@@ -158,8 +158,8 @@ def load_data(
                     labels.append(label)
                     file_paths.append(fp)
 
-                    if len(images) == num_images:
-                        break
+                if len(images) == num_images:
+                    break
         else:
             # pulling all images
             for img, label, fp in dataset:
