@@ -148,6 +148,7 @@ def load_data(
 
         if num_images is not None:
             # if we are only pulling a random subset
+            logger.info(f'Loading {num_images} images')
             random_img_idx = random.choices(range(len(dataset)), k=num_images)
             for i, (img, label, fp) in enumerate(dataset):
                 if i in random_img_idx:
