@@ -136,3 +136,4 @@ outputs/
 logs/
 old_logs/
 models/
+src/initial_exploration.ipynb

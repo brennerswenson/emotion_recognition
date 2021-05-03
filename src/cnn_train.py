@@ -63,6 +63,8 @@ def main(args):
     images, labels, file_paths = data_iter.next()
     writer.add_graph(model, images)
 
+    logger.info(model)
+
     # send the model to the GPU and train the model
     model = utils.send_to_device(model, device)
     hist = utils.train_model(

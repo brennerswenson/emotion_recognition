@@ -71,13 +71,13 @@ def load_data(
 
     # define the image augmentation transforms
     augmentation_transforms = [
-        transforms.ColorJitter(0.50, 0.50, 0.20, 0.20),
+        transforms.ColorJitter(0.50, 0.50, 0.1, 0.1),
         transforms.GaussianBlur(3, (0.001, 1)),
         transforms.RandomGrayscale(p=0.5),
         transforms.RandomHorizontalFlip(),
-        transforms.RandomAffine(25, scale=(0.7, 1.3)),
+        transforms.RandomAffine(15, scale=(0.75, 1.25)),
         transforms.ToTensor(),
-        transforms.RandomErasing(p=0.66),
+        transforms.RandomErasing(p=0.50),
         transforms.ToPILImage(),
     ]
 
@@ -89,7 +89,7 @@ def load_data(
                 HOG(
                     orientations=hog_dict.get("orientation"),
                     pix_per_cell=hog_dict.get("pix_per_cell"),
-                    cells_per_block=(1, 1),
+                    cells_per_block=(3, 3),
                     multichannel=True,
                 ),
             ]
@@ -100,7 +100,7 @@ def load_data(
                 HOG(
                     orientations=hog_dict.get("orientation"),
                     pix_per_cell=hog_dict.get("pix_per_cell"),
-                    cells_per_block=(1, 1),
+                    cells_per_block=(3, 3),
                     multichannel=True,
                 ),
             ]
@@ -110,7 +110,7 @@ def load_data(
                 HOG(
                     orientations=hog_dict.get("orientation"),
                     pix_per_cell=hog_dict.get("pix_per_cell"),
-                    cells_per_block=(1, 1),
+                    cells_per_block=(3, 3),
                     multichannel=True,
                 ),
             ]
@@ -390,7 +390,7 @@ def plot_sample_predictions(
     y_true = np.array(y_true)[random_idx]
 
     fig, axes = plt.subplots(
-        num_rows, num_cols, figsize=figsize, sharex=True, sharey=True, dpi=100
+        num_rows, num_cols, figsize=figsize, sharex=True, sharey=True, dpi=150
     )
     title_str = f"Sample predictions of {model_type}"
     title_str = title_str + f" | Accuracy:{accuracy: .2f}%" if accuracy else title_str
@@ -638,7 +638,7 @@ def train_model(
 
 
 def plot_confusion_matrix(
-    y_val,
+    y_true,
     all_preds,
     unique_labels,
     model,
@@ -649,7 +649,7 @@ def plot_confusion_matrix(
     Create and plot a confusion matrix from provided truth data. Add to SummaryWriter
     if passed, otherwise display the plot.
     Args:
-        y_val (np.array): Array with truth labels.
+        y_true (np.array): Array with truth labels.
         all_preds (np.array): Array with predicted labels.
         unique_labels (list of int): List containing the unique possible classes.
         model (str): Type of model being analysed.
@@ -662,12 +662,12 @@ def plot_confusion_matrix(
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         cm = metrics.confusion_matrix(
-            y_val,
+            y_true,
             all_preds,
             labels=unique_labels,
         )
-    fig, ax = plt.subplots(figsize=(5, 5), dpi=100)
-    ax.set_title(f"{model} Validation Confusion Matrix")
+    fig, ax = plt.subplots(figsize=(5, 5), dpi=200)
+    ax.set_title(f"{model} Test Confusion Matrix")
 
     if no_preds:
         ticks = list([v for k, v in LABELS.items()])

@@ -6,7 +6,6 @@ import os
 from pathlib import Path
 import joblib
 from sklearn import metrics
-from PIL import Image
 import numpy as np
 import random
 import cv2
@@ -16,7 +15,7 @@ from tqdm import tqdm
 
 from collections import OrderedDict
 
-from utils import load_data, plot_sample_predictions, get_pred_metrics
+from utils import load_data, plot_sample_predictions, get_pred_metrics, plot_confusion_matrix
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -26,12 +25,12 @@ DATASET_DIR = str(PROJECT_DIR.joinpath("cw_dataset"))
 MODELS_DIR = str(PROJECT_DIR.joinpath("models"))
 VIDEOS_DIR = str(PROJECT_DIR.joinpath("video"))
 
-SVM_MODEL = "SIFT-SVC_2021-04-13 05-23.joblib"
+SVM_MODEL = "SIFT-SVC_2021-04-14 00-20.joblib"
 CNN_MODEL = "CNN_2021-04-29 10-11.pth"
-MLP_MODEL = "MLP_2021-04-12 19-52.pth"
+MLP_MODEL = "MLP_2021-05-01 14-02.pth"
 
-MLP_INPUT = 10000  # length of hog feature descriptors
-MLP_HOG_DICT = {"orientation": 16, "pix_per_cell": (4, 4)}
+MLP_INPUT = 14112  # length of hog feature descriptors
+MLP_HOG_DICT = {"orientation": 8, "pix_per_cell": (6, 6)}
 
 
 class EmotionRecognition:
@@ -73,7 +72,7 @@ class EmotionRecognition:
         elif self.model_type == "MLP":
             self.is_img = False
             self.model = EmotionRecMLP(
-                MLP_INPUT, MLP_INPUT // 2, MLP_INPUT // 4, MLP_INPUT // 8, 7
+                MLP_INPUT, MLP_INPUT // 3, MLP_INPUT // 6, MLP_INPUT // 9, 7
             )
             self.model.load_state_dict(torch.load(f"{MODELS_DIR}/{MLP_MODEL}", map_location="cpu"))
             self.model.eval()
@@ -128,13 +127,13 @@ class EmotionRecognition:
         else:
             logger.info("Invalid Model Type")
 
-    def predict(self, visualise=False, num_test_images=None):
+    def predict(self, visualise_samples=False, num_test_images=None, vis_confusion_matrix=False):
         """
         Predict on a subset of images or entire test dataset. Metrics are calculated like F1
         score, recall, precision, etc. for predictions. If num_test_images not provided,
         predictions are made for entire test dataset.
         Args:
-            visualise (bool): Indicates if sample predictions should be plotted or not.
+            visualise_samples (bool): Indicates if sample predictions should be plotted or not.
             num_test_images (int): Number of test images to predict. If not supplied,
                     all test images will be predicted.
 
@@ -171,7 +170,7 @@ class EmotionRecognition:
             self.X = [cv2.cvtColor(x, cv2.COLOR_BGR2RGB) for x in self.X]
             self.X = [np.asarray(x) for x in self.X]
 
-        if visualise:
+        if visualise_samples:
             plot_sample_predictions(
                 self.X,
                 predictions,
@@ -183,6 +182,11 @@ class EmotionRecognition:
                 figsize=(5, 5),
                 accuracy=metrics_dict["accuracy"],
             )
+
+        if vis_confusion_matrix:
+            unique_labels = [int(x) - 1 for x in self.data_loader.dataset.classes]
+            plot_confusion_matrix(self.y, predictions, unique_labels, self.model_type)
+
         return predictions, metrics_dict
 
 
@@ -285,7 +289,7 @@ class EmotionRecognitionVideo(EmotionRecognition):
 
         """
         self.min_size = self.height // 10
-        profile_face_tolerance = 1
+        profile_face_tolerance = .25
         profe_face_high = 1 + profile_face_tolerance
         profe_face_low = 1 - profile_face_tolerance
 
@@ -294,10 +298,10 @@ class EmotionRecognitionVideo(EmotionRecognition):
         for idx, frame in tqdm(enumerate(frames), total=len(frames)):
             # detect faces using both models
             face_boxes = self.face_cascade.detectMultiScale(
-                frame, 1.03, 40, minSize=(self.min_size, self.min_size)
+                frame, 1.04, 30, minSize=(self.min_size, self.min_size)
             )
             profile_boxes = self.profile_cascade.detectMultiScale(
-                frame, 1.03, 40, minSize=(self.min_size, self.min_size)
+                frame, 1.04, 30, minSize=(self.min_size, self.min_size)
             )
             logger.info(f"{len(face_boxes)} faces")
             logger.info(f"{len(profile_boxes)} profiles")
@@ -319,6 +323,7 @@ class EmotionRecognitionVideo(EmotionRecognition):
                         )
                     ]
                 )
+                profile_boxes = np.array([np.array(list(x)) for x in set(tuple(x) for x in profile_boxes)])
                 if profile_boxes.any():
                     logger.info(f"Adding {len(profile_boxes)} profile not present in faces")
                     face_boxes = np.concatenate((face_boxes, profile_boxes), axis=0)
@@ -332,7 +337,10 @@ class EmotionRecognitionVideo(EmotionRecognition):
             if isinstance(face_boxes, np.ndarray):
                 # extract the face images from the video frames and add to return array at index idx
                 face_images = [self._extract_face(frame, face_arr) for face_arr in face_boxes]
-                # plt.imshow(random.choice(face_images))
+                # fig, axes = plt.subplots(1, 2)
+                # axes = axes.ravel()
+                # axes[0].imshow(random.choice(face_images))
+                # axes[1].imshow(frame)
                 # plt.show()
                 face_dict[idx] = list(zip(face_boxes, face_images))
             else:
@@ -388,15 +396,15 @@ class EmotionRecognitionVideo(EmotionRecognition):
                     if face:
                         x, y, w, h = face[0]
                         face_label = face[2]
-                        frame = cv2.rectangle(frame, (x, y), (x + w, y + h), (32, 178, 170), 3)
+                        frame = cv2.rectangle(frame, (x, y), (x + w, y + h), (32, 178, 170), 5)
                         frame = cv2.putText(
                             frame,
                             face_label,
                             (x - 20, y - 20),
                             cv2.FONT_HERSHEY_PLAIN,
-                            3,
+                            6,
                             (32, 178, 170),
-                            4,
+                            9,
                         )
             annotated_frames.append(frame)
         return frames
@@ -417,13 +425,5 @@ class EmotionRecognitionVideo(EmotionRecognition):
         x = index_arr[0]
         rect_width = index_arr[2]
         rect_height = index_arr[3]
-        extracted = frame[y : y + rect_height, x : x + rect_width]
+        extracted = frame[y: y + rect_height, x: x + rect_width]
         return extracted
-
-
-if __name__ == "__main__":
-    # em = EmotionRecognition(test_path=os.path.join(DATASET_DIR,  "test"), model_type="MLP")
-    # em.predict(visualise=True, num_test_images=4)
-
-    erv = EmotionRecognitionVideo('CNN')
-    erv.predict_video(os.path.join(VIDEOS_DIR, 'pexels-diva-plavalaguna-6194825.mp4'))
