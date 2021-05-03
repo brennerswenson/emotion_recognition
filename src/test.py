@@ -289,7 +289,7 @@ class EmotionRecognitionVideo(EmotionRecognition):
 
         """
         self.min_size = self.height // 10
-        profile_face_tolerance = .50
+        profile_face_tolerance = 1
         profe_face_high = 1 + profile_face_tolerance
         profe_face_low = 1 - profile_face_tolerance
 
@@ -396,15 +396,15 @@ class EmotionRecognitionVideo(EmotionRecognition):
                     if face:
                         x, y, w, h = face[0]
                         face_label = face[2]
-                        frame = cv2.rectangle(frame, (x, y), (x + w, y + h), (32, 178, 170), 3)
+                        frame = cv2.rectangle(frame, (x, y), (x + w, y + h), (32, 178, 170), 2)
                         frame = cv2.putText(
                             frame,
                             face_label,
                             (x - 20, y - 20),
                             cv2.FONT_HERSHEY_PLAIN,
-                            4,
+                            2,
                             (32, 178, 170),
-                            4,
+                            2,
                         )
             annotated_frames.append(frame)
         return frames
@@ -427,3 +427,7 @@ class EmotionRecognitionVideo(EmotionRecognition):
         rect_height = index_arr[3]
         extracted = frame[y: y + rect_height, x: x + rect_width]
         return extracted
+
+if __name__ == '__main__':
+    erv = EmotionRecognitionVideo(model_type="CNN")
+    frames = erv.predict_video(str(Path(VIDEOS_DIR).joinpath("downsampled_group.mp4")))
